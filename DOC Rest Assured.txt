@@ -1,0 +1,181 @@
+
+  Open Declaration   io.restassured.RestAssured
+
+
+REST Assured is a Java DSL for simplifying testing of REST based services built on top of HTTP Builder.It supports POST, GET, PUT, DELETE, HEAD, PATCH and OPTIONSrequests and to verify the response of these requests. Usage examples: 
+1.Assume that the GET request (to http://localhost:8080/lotto) returns JSON as:  {
+ "lotto":{
+   "lottoId":5,
+   "winning-numbers":[2,45,34,23,7,5,3],
+   "winners":[{
+     "winnerId":23,
+     "numbers":[2,45,34,23,3,5]
+   },{
+     "winnerId":54,
+     "numbers":[52,3,12,11,18,22]
+   }]
+  }
+ }
+ 
+
+REST assured can then help you to easily make the GET request and verify the response. E.g. if you want to verifythat lottoId is equal to 5 you can do like this: 
+
+
+ get("/lotto").then().assertThat().body("lotto.lottoId", equalTo(5));
+ 
+
+or perhaps you want to check that the winnerId's are 23 and 54: 
+ get("/lotto").then().assertThat().body("lotto.winners.winnerId", hasItems(23, 54));
+ 
+
+2.XML can be verified in a similar way. Imagine that a POST request to http://localhost:8080/greetXML returns:  <greeting>
+     <firstName>{params("firstName")}</firstName>
+     <lastName>{params("lastName")}</lastName>
+   </greeting>
+ 
+
+i.e. it sends back a greeting based on the firstName and lastName parameter sent in the request.You can easily perform and verify e.g. the firstName with REST assured: 
+ with().parameters("firstName", "John", "lastName", "Doe").when().post("/greetXML").then().assertThat().body("greeting.firstName", equalTo("John"));
+ 
+
+If you want to verify both firstName and lastName you may do like this: 
+ with().parameters("firstName", "John", "lastName", "Doe").when().post("/greetXML").then().assertThat().body("greeting.firstName", equalTo("John")).and().body("greeting.lastName", equalTo("Doe"));
+ 
+
+or a little shorter: 
+ with().parameters("firstName", "John", "lastName", "Doe").when().post("/greetXML").then().assertThat().body("greeting.firstName", equalTo("John"), "greeting.lastName", equalTo("Doe"));
+ 
+
+1.You can also verify XML responses using x-path. For example:  given().parameters("firstName", "John", "lastName", "Doe").when().post("/greetXML").then().assertThat().body(hasXPath("/greeting/firstName", containsString("Jo")));
+ 
+or  with().parameters("firstName", "John", "lastName", "Doe").post("/greetXML").then().body(hasXPath("/greeting/firstName[text()='John']"));
+ 
+
+2.XML response bodies can also be verified against an XML Schema (XSD) or DTD. 
+XSD example:  get("/carRecords").then().assertThat().body(matchesXsd(xsd));
+ 
+DTD example:  get("/videos").then().assertThat().body(matchesDtd(dtd));
+ 
+matchesXsd and matchesDtd are Hamcrest matchers which you can import from RestAssuredMatchers. 
+3.Besides specifying request parameters you can also specify headers, cookies, body and content type.
+◦Cookie:  given().cookie("username", "John").when().get("/cookie").then().assertThat().body(equalTo("username"));
+ 
+
+◦Headers:  given().header("MyHeader", "Something").and(). ..
+ given().headers("MyHeader", "Something", "MyOtherHeader", "SomethingElse").and(). ..
+ 
+
+◦Content Type:  given().contentType(ContentType.TEXT). ..
+ 
+
+◦Body:  given().request().body("some body"). .. // Works for POST and PUT requests
+ given().request().body(new byte[]{42}). .. // Works for POST
+ 
+
+
+4.You can also verify status code, status line, cookies, headers, content type and body. ◦Cookie:  expect().cookie("cookieName", "cookieValue"). ..
+ expect().cookies("cookieName1", "cookieValue1", "cookieName2", "cookieValue2"). ..
+ expect().cookies("cookieName1", "cookieValue1", "cookieName2", containsString("Value2")). ..
+ 
+
+◦Status:  get("/x").then().assertThat().statusCode(200). ..
+ get("/x").then().assertThat().statusLine("something"). ..
+ get("/x").then().assertThat().statusLine(containsString("some")). ..
+ 
+
+◦Headers:  get("/x").then().assertThat().header("headerName", "headerValue"). ..
+ get("/x").then().assertThat().headers("headerName1", "headerValue1", "headerName2", "headerValue2"). ..
+ get("/x").then().assertThat().headers("headerName1", "headerValue1", "headerName2", containsString("Value2")). ..
+ 
+
+◦Content-Type:  get("/x").then().assertThat().contentType(ContentType.JSON). ..
+ 
+
+◦REST Assured also supports mapping a request body and response body to and from a Java object using Jackson, Gson or JAXB. Usage example:  Greeting greeting = get("/greeting").as(Greeting.class);
+ 
+ Greeting greeting = new Greeting();
+ greeting.setFirstName("John");
+ greeting.setLastName("Doe");
+
+ given().body(greeting).when().post("/greeting");
+ 
+See the javadoc for the body method for more details. 
+◦Full body/content matching:  get("/x").then().assertThat().body(equalsTo("something")). ..
+ get("/x").then().assertThat().content(equalsTo("something")). .. // Same as above
+ 
+
+
+5.REST assured also supports some authentication schemes, for example basic authentication:  given().auth().basic("username", "password").when().get("/secured/hello").then().statusCode(200);
+ 
+Other supported schemes are OAuth and certificate authentication. 
+6.By default REST assured assumes host localhost and port 8080 when doing a request. If you want a different port you can do:  given().port(80). ..
+ 
+or simply:  .. when().get("http://myhost.org:80/doSomething");
+ 
+
+7.Parameters can also be set directly on the url:  ..when().get("/name?firstName=John&lastName=Doe");
+ 
+
+8.You can use the XmlPath or JsonPath toeasily parse XML or JSON data from a response. 1.XML example:             String xml = post("/greetXML?firstName=John&lastName=Doe").andReturn().asString();
+            // Now use XmlPath to get the first and last name
+            String firstName = with(xml).get("greeting.firstName");
+            String lastName = with(xml).get("greeting.lastName");
+
+            // or a bit more efficiently:
+            XmlPath xmlPath = new XmlPath(xml).setRootPath("greeting");
+            String firstName = xmlPath.get("firstName");
+            String lastName = xmlPath.get("lastName");
+        
+
+2.JSON example:             String json = get("/lotto").asString();
+            // Now use JsonPath to get data out of the JSON body
+            int lottoId = with(json).getInt("lotto.lottoId);
+            List winnerIds = with(json).get("lotto.winners.winnerId");
+
+            // or a bit more efficiently:
+            JsonPath jsonPath = new JsonPath(json).setRootPath("lotto");
+            int lottoId = jsonPath.getInt("lottoId");
+            List winnderIds = jsonPath.get("winnders.winnderId");
+        
+
+
+9.REST Assured providers predefined parsers for e.g. HTML, XML and JSON. But you can parse other kinds of content by registering a predefined parser for unsupported content-types by using:  RestAssured.registerParser(<content-type>, <parser>);
+ 
+E.g. to register that content-type 'application/custom' should be parsed using the XML parser do:  RestAssured.registerParser("application/custom", Parser.XML);
+ 
+You can also unregister a parser using:  RestAssured.unregisterParser("application/custom");
+ 
+If can also specify a default parser for all content-types that do not match a pre-defined or registered parser. This is also useful if the response doesn't contain a content-type at all:  RestAssured.defaultParser = Parser.JSON;
+ 
+
+10.If you need to re-use a specification in multiple tests or multiple requests you can use the ResponseSpecBuilderand RequestSpecBuilder like this:  RequestSpecification requestSpec = new RequestSpecBuilder().addParameter("parameter1", "value1").build();
+ ResponseSpecification responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
+
+ given().
+         spec(requestSpec).
+ when().
+        get("/something");
+ then().
+         spec(responseSpec).
+         body("x.y.z", equalTo("something"));
+ 
+
+11.You can also create filters and add to the request specification. A filter allows you to inspect and alter a request before it's actually committed and also inspect and alter theresponse before it's returned to the expectations. You can regard it as an "around advice" in AOP terms. Filters can be used to implement custom authentication schemes, session management, logging etc. E.g.  given().filter(ResponseLoggingFilter.logResponseIfStatusCodeIs(302)). ..
+ 
+will log/print the response body to after each request. 
+12.You can also change the default base URI, base path, port, authentication scheme, root path and filters for all subsequent requests:  RestAssured.baseURI = "http://myhost.org";
+ RestAssured.port = 80;
+ RestAssured.basePath = "/resource";
+ RestAssured.authentication = basic("username", "password");
+ RestAssured.rootPath = "store.book";
+ 
+This means that a request like e.g. get("/hello") goes to: http://myhost.org:8080/resource/hellowhich basic authentication credentials "username" and "password". See rootPath for more info about setting the root paths, filters(java.util.List) for settingdefault filters
+You can reset to the standard baseURI (localhost), basePath (empty), standard port (8080), default authentication scheme (none), default parser (none) and default root path (empty string) using:  RestAssured.reset();
+ 
+
+
+In order to use REST assured effectively it's recommended to statically importmethods from the following classes: 
+•io.restassured.RestAssured.*
+•io.restassured.matcher.RestAssuredMatchers.*
+•org.hamcrest.Matchers.*
+

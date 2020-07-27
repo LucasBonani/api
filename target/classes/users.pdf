@@ -1,0 +1,28 @@
+
+<!-- saved from url=(0048)http://restapi.wcaquino.me/v2/users?format=clean -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body>
+  <table style="border: 1px solid; color: black">
+    <tbody><tr>
+      <th>Id</th>
+      <th>Nome</th>
+      <th>Idade</th>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>João da Silva</td>
+      <td>30</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Maria Joaquina</td>
+      <td>25</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Ana Júlia</td>
+      <td>20</td>
+    </tr>
+  </tbody></table>
+
+
+</body></html>
